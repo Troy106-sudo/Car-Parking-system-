@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SmartPark Kenya</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+<header class="topbar">
+    <div>
+        <h1>SmartPark Kenya</h1>
+        <p>Modern Parking Management System</p>
+    </div>
+    <div class="badge">MMU Project</div>
+</header>
+
+<main class="container">
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert {{ category }}">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <section class="stats">
+        <div class="stat-card">
+            <span>Total Slots</span>
+            <strong>{{ total_slots }}</strong>
+        </div>
+        <div class="stat-card available">
+            <span>Available</span>
+            <strong>{{ available_count }}</strong>
+        </div>
+        <div class="stat-card occupied">
+            <span>Occupied</span>
+            <strong>{{ occupied_count }}</strong>
+        </div>
+    </section>
+
+    <section class="panel">
+        <div class="section-title">
+            <div>
+                <h2>Parking Slots</h2>
+                <p>Green = available, red = occupied</p>
+            </div>
+        </div>
+
+        <div class="slot-grid">
+            {% for slot in slots %}
+                <div class="slot {{ 'free' if slot.status == 'AVAILABLE' else 'busy' }}">
+                    <span>Slot</span>
+                    <strong>{{ slot.slot_number }}</strong>
+                    <small>{{ slot.status }}</small>
+                </div>
+            {% endfor %}
+        </div>
+    </section>
+
+    <div class="two-columns">
+
+        <section class="panel">
+            <h2>Vehicle Entry</h2>
+            <p class="muted">Record a vehicle when it arrives. The system automatically assigns an available slot.</p>
+
+            <form action="{{ url_for('vehicle_entry') }}" method="POST">
+                <label>Vehicle Registration</label>
+                <input
+                    type="text"
+                    name="plate_number"
+                    placeholder="e.g. KDA 123A"
+                    maxlength="20"
+                    required
+                >
+
+                <label>Driver Name</label>
+                <input
+                    type="text"
+                    name="driver_name"
+                    placeholder="Enter driver's name"
+                    required
+                >
+
+                <button class="primary" type="submit">Record Entry</button>
+            </form>
+        </section>
+
+        <section class="panel">
+            <h2>Parking Charges</h2>
+            <div class="price-row"><span>0–30 minutes</span><strong>Free</strong></div>
+            <div class="price-row"><span>Up to 2 hours</span><strong>KSh 50</strong></div>
+            <div class="price-row"><span>Up to 4 hours</span><strong>KSh 100</strong></div>
+            <div class="price-row"><span>Up to 6 hours</span><strong>KSh 300</strong></div>
+            <div class="price-row"><span>Over 6 hours</span><strong>KSh 500</strong></div>
+        </section>
+
+    </div>
+
+    <section class="panel">
+        <div class="section-title">
+            <div>
+                <h2>Vehicles Currently Parked</h2>
+                <p>Exit a vehicle to calculate its parking fee.</p>
+            </div>
+        </div>
+
+        {% if parked %}
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Registration</th>
+                        <th>Driver</th>
+                        <th>Slot</th>
+                        <th>Entry Time</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for vehicle in parked %}
+                    <tr>
+                        <td><strong>{{ vehicle.plate_number }}</strong></td>
+                        <td>{{ vehicle.driver_name }}</td>
+                        <td>Slot {{ vehicle.slot_number }}</td>
+                        <td>{{ vehicle.entry_time }}</td>
+                        <td>
+                            <form
+                                action="{{ url_for('vehicle_exit', vehicle_id=vehicle.id) }}"
+                                method="POST"
+                                onsubmit="return confirm('Confirm payment and vehicle exit?');"
+                            >
+                                <button class="danger" type="submit">Exit / Pay</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+            <div class="empty">No vehicles are currently parked.</div>
+        {% endif %}
+    </section>
+
+    <section class="panel">
+        <h2>Recent Exits</h2>
+
+        {% if recent %}
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Registration</th>
+                        <th>Slot</th>
+                        <th>Time Spent</th>
+                        <th>Amount Paid</th>
+                        <th>Exit Time</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for vehicle in recent %}
+                    <tr>
+                        <td>{{ vehicle.plate_number }}</td>
+                        <td>{{ vehicle.slot_number }}</td>
+                        <td>{{ vehicle.duration_minutes }} minutes</td>
+                        <td><strong>KSh {{ "%.0f"|format(vehicle.amount) }}</strong></td>
+                        <td>{{ vehicle.exit_time }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+            <div class="empty">No completed exits yet.</div>
+        {% endif %}
+    </section>
+
+</main>
+
+<footer>
+    SmartPark Kenya &mdash; Web-Based Parking Management System
+</footer>
+
+<script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>
